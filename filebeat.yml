@@ -1,0 +1,17 @@
+filebeat.config:
+  modules:
+    path: ${path.config}/modules.d/*.yml
+    reload.enabled: false
+
+filebeat.inputs:
+- type: container
+  enabled: true
+  paths:
+    - /var/lib/docker/containers/{{CONTAINER}}/*.log
+  json.keys_under_root: true
+
+processors:
+- add_cloud_metadata: ~
+
+output.logstash:
+  hosts: ["logstash:5044"]

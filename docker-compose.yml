@@ -1,0 +1,52 @@
+version: "3"
+
+services:
+  apm:
+    image: elastic/apm-server:7.3.1
+    container_name: apm
+    volumes:
+      - "./apm-server.yml:/usr/share/apm-server/apm-server.yml"
+  elasticsearch:
+    image: elasticsearch:7.3.1
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - discovery.type=single-node
+  kibana:
+    image: kibana:7.3.1
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    links:
+      - elasticsearch
+    depends_on:
+      - elasticsearch
+  logstash:
+    image: logstash:7.3.1
+    container_name: logstash
+    volumes:
+      - "./logstash.conf:/usr/share/logstash/pipeline/logstash.conf"
+    ports:
+      - "5044:5044"
+    links:
+      - elasticsearch
+    depends_on:
+      - elasticsearch
+  filebeat:
+    image: custom-filebeat
+    container_name: filebeat
+    build:
+      context: .
+      dockerfile: filebeat.Dockerfile
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/var/lib/docker/containers:/var/lib/docker/containers"
+      - "/usr/bin/docker:/usr/bin/docker"
+    links:
+      - logstash
+      - elasticsearch
+    depends_on:
+      - logstash
+      - elasticsearch
